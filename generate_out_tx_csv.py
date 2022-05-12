@@ -5,22 +5,24 @@ import time
 import datetime
 
 
-#wallet address and api variables
+#wallet address and api variables.
 wallet_address = 'bc1q4fdqv7z8mqk73rtgzk7qdxnzw675320gjar6xx'
 api_url = 'https://blockchain.info'
 api_end_point = 'rawaddr'
+
+#requesting to get number of transactions in the wallet address.
 url = f'{api_url}/{api_end_point}/{wallet_address}'
 response = requests.get(url)
 
+#calculating number of epochs needed.
 if response.status_code == 200:
     response_body = response.json()
     TX_COUNT = response_body['n_tx']
-    ITERATIONS = int(TX_COUNT / 100) - 1
+    ITERATIONS = int(TX_COUNT / 100)
 else:
     ITERATIONS = 0 
 
-
-##fetching wallet transactions from api
+#fetching wallet transactions data from api
 transactions_df = None
 i = 0
 offset = 0
@@ -35,9 +37,9 @@ while i <= ITERATIONS:
     offset = offset + 100
     time.sleep(delay_value)
 
-
 ##generating out transactions
 i = 0
+parsed_trx_count = 0
 out_transactions_data = []
 while i <= ITERATIONS:
     f_name = f'data/{wallet_address}tx{i*100}.json'
@@ -53,7 +55,7 @@ while i <= ITERATIONS:
         outs = tx['out']
         is_out_tx = False
         tx_amount = 0
-
+        parsed_trx_count += 1
         for input in inputs:
             prev = input['prev_out']
             if prev['addr'] == wallet_address:
@@ -65,6 +67,7 @@ while i <= ITERATIONS:
             out_tx_address = out_tx['addr']
             out_transactions_data.append([tx_hash, tx_time, wallet_address, tx_amount, out_tx_address])
     i = i + 1
+print(parsed_trx_count)
 
 #saving the result to csv file and printing the sum of all outgoing transactions.
 result = pd.DataFrame(out_transactions_data, columns=['tx_hash', 'tx_date_time', 'from_addr', 'amount', 'to_addr'])
